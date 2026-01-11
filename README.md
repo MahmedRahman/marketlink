@@ -16,7 +16,69 @@
 - Composer
 - SQLite (أو أي قاعدة بيانات أخرى)
 
+أو استخدام Docker (موصى به)
+
 ## التثبيت
+
+### باستخدام Docker (موصى به)
+
+1. تأكد من تثبيت Docker و Docker Compose على جهازك
+
+2. استنساخ المشروع:
+```bash
+cd marketlink
+```
+
+3. إنشاء ملف `.env`:
+```bash
+cp .env.example .env
+```
+
+4. تحديث إعدادات قاعدة البيانات في ملف `.env` (اختياري - SQLite هو الافتراضي):
+```env
+DB_CONNECTION=sqlite
+```
+
+5. بناء وتشغيل الحاوية:
+```bash
+docker-compose up -d --build
+```
+
+6. تثبيت المكتبات داخل الحاوية:
+```bash
+docker-compose exec app composer install
+docker-compose exec app npm install
+```
+
+7. إنشاء مفتاح التطبيق:
+```bash
+docker-compose exec app php artisan key:generate
+```
+
+8. تشغيل Migrations:
+```bash
+docker-compose exec app php artisan migrate
+```
+
+9. الوصول للتطبيق:
+   - افتح المتصفح على: `http://localhost:8000`
+
+10. أوامر مفيدة:
+```bash
+# عرض السجلات
+docker-compose logs -f app
+
+# تنفيذ أوامر Artisan
+docker-compose exec app php artisan [command]
+
+# الدخول إلى الحاوية
+docker-compose exec app sh
+
+# إيقاف الحاوية
+docker-compose down
+```
+
+### التثبيت التقليدي (بدون Docker)
 
 1. استنساخ المشروع:
 ```bash
