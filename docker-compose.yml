@@ -16,4 +16,4 @@ services:
       - APP_URL=http://localhost:8000
       - DB_CONNECTION=sqlite
     ports:
-      - "8000:80"
+      - "8006:80"
