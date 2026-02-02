@@ -10,8 +10,11 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\FinancialRecordController;
 use App\Http\Controllers\TaskController;
 
-// صفحة تسجيل الدخول كصفحة رئيسية
-Route::get('/', [LoginController::class, 'showLoginForm'])->name('login');
+// الصفحة الرئيسية: Landing Page فقط
+Route::get('/', fn () => view('landing'))->name('home');
+
+// تسجيل الدخول على مسار منفصل
+Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.post');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
@@ -37,13 +40,15 @@ Route::middleware('auth')->group(function () {
     
     // تقرير الحسابات
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/payment-status', [ReportController::class, 'paymentStatus'])->name('reports.payment-status');
     Route::post('/reports/create-records', [ReportController::class, 'createRecords'])->name('reports.create-records');
     
     // السجلات المالية
-    Route::get('/financial-records/{id}', [FinancialRecordController::class, 'show'])->name('financial-records.show');
+    Route::get('/financial-records/{financialRecord}', [FinancialRecordController::class, 'show'])->name('financial-records.show');
     Route::post('/financial-records', [FinancialRecordController::class, 'store'])->name('financial-records.store');
-    Route::put('/financial-records/{id}', [FinancialRecordController::class, 'update'])->name('financial-records.update');
-    Route::delete('/financial-records/{id}', [FinancialRecordController::class, 'destroy'])->name('financial-records.destroy');
+    Route::put('/financial-records/{financialRecord}', [FinancialRecordController::class, 'update'])->name('financial-records.update');
+    Route::patch('/financial-records/{financialRecord}/payment-status', [FinancialRecordController::class, 'updatePaymentStatus'])->name('financial-records.payment-status');
+    Route::delete('/financial-records/{financialRecord}', [FinancialRecordController::class, 'destroy'])->name('financial-records.destroy');
     
     // المهام
     Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');

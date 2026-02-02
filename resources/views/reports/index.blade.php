@@ -266,16 +266,25 @@
                                     <td>
                                         @if($record->type == 'revenue')
                                             <span class="status-badge status-{{ $record->payment_status ?? 'pending' }}">
-                                                {{ $record->payment_status == 'paid' ? 'مدفوع' : ($record->payment_status == 'pending' ? 'معلق' : 'غير مدفوع') }}
+                                                {{ $record->payment_status == 'paid' ? 'تم التحصيل' : ($record->payment_status == 'pending' ? 'معلق' : 'غير مدفوع') }}
                                             </span>
                                         @else
                                             <span class="status-badge status-{{ $record->status ?? 'pending' }}">
-                                                {{ $record->status == 'paid' ? 'مدفوع' : ($record->status == 'pending' ? 'معلق' : 'غير مدفوع') }}
+                                                {{ $record->status == 'paid' ? 'تم الدفع' : ($record->status == 'pending' ? 'معلق' : 'غير مدفوع') }}
                                             </span>
                                         @endif
                                     </td>
                                     <td>
                                         <div class="action-buttons">
+                                            @if($record->type == 'revenue' && ($record->payment_status ?? '') !== 'paid')
+                                                <button type="button" class="btn-mark-paid" onclick="markAsPaid({{ $record->id }}, 'revenue')" title="تم التحصيل">
+                                                    تم التحصيل
+                                                </button>
+                                            @elseif($record->type == 'expense' && ($record->status ?? '') !== 'paid')
+                                                <button type="button" class="btn-mark-paid" onclick="markAsPaid({{ $record->id }}, 'expense')" title="تم الدفع">
+                                                    تم الدفع
+                                                </button>
+                                            @endif
                                             <button class="btn-edit" onclick="editRecord({{ $record->id }})" title="تعديل">
                                                 ✏️
                                             </button>
@@ -1005,6 +1014,24 @@
     transform: scale(1.1);
 }
 
+.btn-mark-paid {
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: linear-gradient(135deg, #2d8659 0%, #237347 100%);
+    color: white;
+    transition: all 0.2s ease;
+    font-family: 'Cairo', sans-serif;
+}
+
+.btn-mark-paid:hover {
+    background: linear-gradient(135deg, #237347 0%, #1a5c36 100%);
+    transform: scale(1.05);
+}
+
 .status-badge {
     display: inline-block;
     padding: 6px 12px;
@@ -1383,6 +1410,33 @@ function editRecord(id) {
             console.error('Error:', error);
             alert('حدث خطأ أثناء جلب بيانات السجل: ' + error.message);
         });
+}
+
+// تغيير حالة الدفع: تم التحصيل (إيراد) أو تم الدفع (مصروف)
+function markAsPaid(id, type) {
+    const msg = type === 'revenue' ? 'تأكيد: تم تحصيل هذا الإيراد؟' : 'تأكيد: تم دفع هذا المصروف؟';
+    if (!confirm(msg)) return;
+    fetch(`/financial-records/${id}/payment-status`, {
+        method: 'PATCH',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert(data.message || 'حدث خطأ');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('حدث خطأ أثناء تحديث حالة الدفع');
+    });
 }
 
 // حذف سجل

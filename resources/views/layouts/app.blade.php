@@ -55,9 +55,15 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('reports.index') }}" class="{{ request()->routeIs('reports.*') ? 'active' : '' }}">
+                        <a href="{{ route('reports.index') }}" class="{{ request()->routeIs('reports.index') ? 'active' : '' }}">
                             <span class="icon">📊</span>
                             <span class="text">تقرير الحسابات</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('reports.payment-status', ['month' => '2026-01']) }}" class="{{ request()->routeIs('reports.payment-status') ? 'active' : '' }}">
+                            <span class="icon">💳</span>
+                            <span class="text">حالة الدفع</span>
                         </a>
                     </li>
                     <li>

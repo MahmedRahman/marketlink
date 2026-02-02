@@ -58,6 +58,26 @@ class FinancialRecordController extends Controller
     }
 
     /**
+     * تحديث حالة الدفع: تم التحصيل (إيراد) أو تم الدفع (مصروف)
+     */
+    public function updatePaymentStatus(FinancialRecord $financialRecord)
+    {
+        if ($financialRecord->type === 'revenue') {
+            $financialRecord->update(['payment_status' => 'paid']);
+            $message = 'تم التحصيل بنجاح';
+        } else {
+            $financialRecord->update(['status' => 'paid']);
+            $message = 'تم الدفع بنجاح';
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'record' => $financialRecord->fresh(),
+        ]);
+    }
+
+    /**
      * حذف سجل
      */
     public function destroy(FinancialRecord $financialRecord)

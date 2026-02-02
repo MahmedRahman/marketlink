@@ -15,7 +15,10 @@ class ReportController extends Controller
      */
     public function index(Request $request)
     {
-        // الحصول على الشهر المحدد (افتراضي: الشهر الحالي)
+        // إذا لم يُحدد شهر، التوجيه لصفحة حالة الدفع — يناير 2026
+        if (!$request->has('month')) {
+            return redirect()->route('reports.payment-status', ['month' => '2026-01']);
+        }
         $selectedMonth = $request->get('month', date('Y-m'));
         $year = date('Y', strtotime($selectedMonth . '-01'));
         $month = date('m', strtotime($selectedMonth . '-01'));
@@ -171,6 +174,60 @@ class ReportController extends Controller
             'revenuePending',
             'expensesPaid',
             'expensesPending'
+        ));
+    }
+
+    /**
+     * صفحة منفصلة: حالة الدفع — افتراضي يناير 2026 لتحديد المطلوب منّا (إيرادات لم تُحصل، مصروفات لم تُدفع)
+     */
+    public function paymentStatus(Request $request)
+    {
+        $selectedMonth = $request->get('month', '2026-01');
+        $exchangeRate = 50;
+
+        $financialRecords = FinancialRecord::where('month', $selectedMonth)
+            ->orderBy('record_date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $revenuePending = $financialRecords->where('type', 'revenue')->filter(function ($r) {
+            return !in_array(strtolower($r->payment_status ?? ''), ['paid', 'محصل', 'مدفوع']);
+        })->values();
+        $revenuePaid = $financialRecords->where('type', 'revenue')->filter(function ($r) {
+            return in_array(strtolower($r->payment_status ?? ''), ['paid', 'محصل', 'مدفوع']);
+        })->values();
+        $expensesPending = $financialRecords->where('type', 'expense')->filter(function ($r) {
+            return !in_array(strtolower($r->status ?? ''), ['paid', 'مدفوع', 'تم الدفع']);
+        })->values();
+        $expensesPaid = $financialRecords->where('type', 'expense')->filter(function ($r) {
+            return in_array(strtolower($r->status ?? ''), ['paid', 'مدفوع', 'تم الدفع']);
+        })->values();
+
+        $sumRevenuePending = $revenuePending->sum(function ($r) use ($exchangeRate) {
+            return $r->currency === 'usd' ? $r->amount * $exchangeRate : $r->amount;
+        });
+        $sumRevenuePaid = $revenuePaid->sum(function ($r) use ($exchangeRate) {
+            return $r->currency === 'usd' ? $r->amount * $exchangeRate : $r->amount;
+        });
+        $sumExpensesPending = $expensesPending->sum(function ($r) use ($exchangeRate) {
+            return $r->currency === 'usd' ? $r->amount * $exchangeRate : $r->amount;
+        });
+        $sumExpensesPaid = $expensesPaid->sum(function ($r) use ($exchangeRate) {
+            return $r->currency === 'usd' ? $r->amount * $exchangeRate : $r->amount;
+        });
+
+        return view('reports.payment-status', compact(
+            'selectedMonth',
+            'financialRecords',
+            'revenuePending',
+            'revenuePaid',
+            'expensesPending',
+            'expensesPaid',
+            'sumRevenuePending',
+            'sumRevenuePaid',
+            'sumExpensesPending',
+            'sumExpensesPaid',
+            'exchangeRate'
         ));
     }
 
