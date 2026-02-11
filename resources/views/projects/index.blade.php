@@ -76,6 +76,13 @@
                     <div class="stat-value">{{ $inactiveProjects }}</div>
                 </div>
             </div>
+            <div class="stat-card revenue-card">
+                <div class="stat-icon">💰</div>
+                <div class="stat-content">
+                    <div class="stat-label">مجموع ثمن الخدمات (الإجمالي)</div>
+                    <div class="stat-value">{{ number_format($totalRevenue ?? 0, 0) }}</div>
+                </div>
+            </div>
         </div>
 
         <!-- Bulk: نسخ المحدد إلى شهر (إنشاء مشاريع جديدة) -->
@@ -103,6 +110,14 @@
             </form>
         @endif
 
+        <!-- إجمالي ثمن الخدمات فوق الجدول -->
+        @if($projects->count() > 0)
+            <div class="total-revenue-bar">
+                <span class="total-revenue-label">مجموع ثمن الخدمات (الإجمالي):</span>
+                <span class="total-revenue-value">{{ number_format($totalRevenue ?? 0, 0) }}</span>
+            </div>
+        @endif
+
         <!-- Projects Table -->
         <div class="projects-table-wrap">
             @if($projects->count() > 0)
@@ -113,6 +128,7 @@
                             <th>اسم المشروع</th>
                             <th>العميل</th>
                             <th>الشهر</th>
+                            <th>ثمن الخدمة</th>
                             <th>الحالة</th>
                             <th>إجراءات</th>
                         </tr>
@@ -136,6 +152,17 @@
                                     @else
                                         <span class="text-muted">—</span>
                                     @endif
+                                </td>
+                                <td class="col-revenue">
+                                    @php
+                                        $projectTotal = 0;
+                                        if ($project->service_revenue && is_array($project->service_revenue)) {
+                                            foreach ($project->service_revenue as $rev) {
+                                                if ($rev !== null && is_numeric($rev)) $projectTotal += $rev;
+                                            }
+                                        }
+                                    @endphp
+                                    {{ number_format($projectTotal, 0) }}
                                 </td>
                                 <td>
                                     <span class="status-badge status-{{ $project->status }}">
@@ -453,6 +480,28 @@
 }
 .btn-bulk-move:disabled { opacity: 0.6; cursor: not-allowed; }
 
+/* شريط الإجمالي فوق الجدول */
+.total-revenue-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #fff8f0 0%, #fff4e6 100%);
+    border: 1px solid rgba(245, 124, 0, 0.25);
+    border-radius: 12px;
+    margin-bottom: 16px;
+}
+.total-revenue-label {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+.total-revenue-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: #f57c00;
+}
+
 /* Projects Table */
 .projects-table-wrap {
     margin-top: 0;
@@ -484,6 +533,7 @@
 .projects-table tbody tr:hover { background: #f8fbfd; }
 .projects-table .col-check { width: 50px; text-align: center; }
 .projects-table .col-check input { width: 18px; height: 18px; cursor: pointer; }
+.projects-table .col-revenue { font-weight: 600; color: #f57c00; white-space: nowrap; }
 .projects-table .text-muted { color: #94a3b8; font-size: 14px; }
 .status-badge {
     display: inline-block;
