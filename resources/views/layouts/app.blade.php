@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'لوحة التحكم') - MarketLink</title>
+    <title>@yield('title', 'لوحة التحكم') - ماركت لينك</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -15,7 +15,7 @@
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <h2>MarketLink</h2>
+                <h2>ماركت لينك</h2>
                 <button class="sidebar-toggle" id="sidebarToggle">
                     <span></span>
                     <span></span>
@@ -52,6 +52,12 @@
                         <a href="{{ route('subscriptions.index') }}" class="{{ request()->routeIs('subscriptions.*') ? 'active' : '' }}">
                             <span class="icon">🔔</span>
                             <span class="text">الاشتراكات</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('important-accounts.index') }}" class="{{ request()->routeIs('important-accounts.*') ? 'active' : '' }}">
+                            <span class="icon">🔐</span>
+                            <span class="text">حسابات الاشتراكات</span>
                         </a>
                     </li>
                     <li>
@@ -113,7 +119,7 @@
             <!-- Footer -->
             <footer class="main-footer">
                 <div class="footer-content">
-                    <p>&copy; {{ date('Y') }} MarketLink. جميع الحقوق محفوظة.</p>
+                    <p>&copy; {{ date('Y') }} ماركت لينك. جميع الحقوق محفوظة.</p>
                     <p>نظام إدارة العملاء</p>
                 </div>
             </footer>

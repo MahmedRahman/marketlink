@@ -16,6 +16,7 @@ class Project extends Model
         'service_type',
         'service_revenue',
         'status',
+        'month',
     ];
 
     /**

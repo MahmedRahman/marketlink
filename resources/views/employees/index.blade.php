@@ -22,6 +22,34 @@
                 {{ session('success') }}
             </div>
         @endif
+        @if (session('error'))
+            <div class="alert alert-error">{{ session('error') }}</div>
+        @endif
+
+        <!-- فلترة حسب الشهر (كروت) -->
+        <div class="month-filters-section">
+            <h3 class="filters-title">فلترة حسب الشهر</h3>
+            <div class="month-filters-grid">
+                <a href="{{ route('employees.index') }}" class="month-filter-card {{ !$selectedMonth ? 'active' : '' }}">
+                    <span class="month-filter-name">الكل</span>
+                    <span class="month-filter-count">{{ $allCount }}</span>
+                </a>
+                @php
+                    $monthsList = ['01'=>'يناير','02'=>'فبراير','03'=>'مارس','04'=>'أبريل','05'=>'مايو','06'=>'يونيو','07'=>'يوليو','08'=>'أغسطس','09'=>'سبتمبر','10'=>'أكتوبر','11'=>'نوفمبر','12'=>'ديسمبر'];
+                @endphp
+                @foreach($monthCounts as $monthValue => $count)
+                    @php
+                        $t = strtotime($monthValue . '-01');
+                        $name = $monthsList[date('m', $t)] ?? $monthValue;
+                        $y = date('Y', $t);
+                    @endphp
+                    <a href="{{ route('employees.index', ['month' => $monthValue]) }}" class="month-filter-card {{ $selectedMonth === $monthValue ? 'active' : '' }}">
+                        <span class="month-filter-name">{{ $name }} {{ $y }}</span>
+                        <span class="month-filter-count">{{ $count }}</span>
+                    </a>
+                @endforeach
+            </div>
+        </div>
 
         <!-- Statistics Cards -->
         <div class="stats-cards">
@@ -48,13 +76,90 @@
             </div>
         </div>
 
-        <!-- Employees Cards -->
-        <div class="employees-cards-container">
-            @if($employees->count() > 0)
+        <!-- Bulk: نسخ المحدد إلى شهر -->
+        @if($employees->count() > 0)
+            <form action="{{ route('employees.move-to-month') }}" method="POST" class="bulk-move-form" id="bulkMoveForm">
+                @csrf
+                <div class="bulk-bar">
+                    <label class="bulk-select-all">
+                        <input type="checkbox" id="selectAllEmployees">
+                        <span>اختيار الكل</span>
+                    </label>
+                    <select name="month" required class="bulk-month-select">
+                        @php
+                            $monthsListSelect = ['01'=>'يناير','02'=>'فبراير','03'=>'مارس','04'=>'أبريل','05'=>'مايو','06'=>'يونيو','07'=>'يوليو','08'=>'أغسطس','09'=>'سبتمبر','10'=>'أكتوبر','11'=>'نوفمبر','12'=>'ديسمبر'];
+                            $currentYear = (int) date('Y');
+                        @endphp
+                        @for($y = $currentYear - 1; $y <= $currentYear + 1; $y++)
+                            @foreach($monthsListSelect as $m => $name)
+                                <option value="{{ $y }}-{{ $m }}" {{ ($y . '-' . $m) === date('Y-m') ? 'selected' : '' }}>{{ $name }} {{ $y }}</option>
+                            @endforeach
+                        @endfor
+                    </select>
+                    <button type="submit" class="btn-bulk-move" id="btnBulkMove" disabled>نسخ المحدد إلى الشهر (نقل)</button>
+                </div>
+            </form>
+        @endif
+
+        <!-- عرض الجدول عند الفلترة بالشهر -->
+        @if($selectedMonth && $employees->count() > 0)
+            <div class="employees-table-wrap">
+                <table class="employees-table">
+                    <thead>
+                        <tr>
+                            <th class="col-check"><span>تحديد</span></th>
+                            <th>الاسم</th>
+                            <th>الهاتف</th>
+                            <th>المشاريع</th>
+                            <th>الحالة</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($employees as $employee)
+                            <tr>
+                                <td class="col-check">
+                                    <input type="checkbox" name="ids[]" form="bulkMoveForm" value="{{ $employee->id }}" class="row-select-employee">
+                                </td>
+                                <td><strong>{{ $employee->name }}</strong></td>
+                                <td>{{ $employee->phone ?? '—' }}</td>
+                                <td>
+                                    @if($employee->projects->count() > 0)
+                                        @foreach($employee->projects as $project)
+                                            <span class="table-project-badge">📁 {{ $project->name }}</span>
+                                        @endforeach
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    <span class="status-badge status-{{ $employee->status }}">
+                                        {{ $employee->status === 'active' ? 'نشط' : 'غير نشط' }}
+                                    </span>
+                                </td>
+                                <td class="actions-cell">
+                                    <a href="{{ route('employees.edit', $employee->id) }}" class="action-btn edit-btn" title="تعديل">✏️ تعديل</a>
+                                    <form action="{{ route('employees.destroy', $employee->id) }}" method="POST" class="delete-form-inline" onsubmit="return confirm('هل أنت متأكد من حذف هذا الموظف؟');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="action-btn delete-btn" title="حذف">🗑️ حذف</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @elseif($employees->count() > 0)
+            <!-- Employees Cards (عند عرض الكل) -->
+            <div class="employees-cards-container">
                 <div class="employees-grid">
                     @foreach($employees as $employee)
                         <div class="employee-card">
                             <div class="employee-header">
+                                <label class="employee-card-select">
+                                    <input type="checkbox" name="ids[]" form="bulkMoveForm" value="{{ $employee->id }}" class="row-select-employee">
+                                </label>
                                 <div class="employee-avatar">
                                     {{ strtoupper(mb_substr($employee->name, 0, 1)) }}
                                 </div>
@@ -139,16 +244,37 @@
                         </div>
                     @endforeach
                 </div>
-            @else
-                <div class="empty-state">
-                    <div class="empty-icon">👥</div>
-                    <h3>لا يوجد موظفين</h3>
-                    <p>ابدأ بإضافة موظف جديد</p>
-                    <a href="{{ route('employees.create') }}" class="btn-add">إضافة موظف جديد</a>
-                </div>
-            @endif
-        </div>
+            </div>
+        @else
+            <div class="empty-state">
+                <div class="empty-icon">👥</div>
+                <h3>لا يوجد موظفين</h3>
+                <p>@if($selectedMonth) لا يوجد موظفين في هذا الشهر. @else ابدأ بإضافة موظف جديد @endif</p>
+                <a href="{{ route('employees.create') }}" class="btn-add">إضافة موظف جديد</a>
+            </div>
+        @endif
     </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var selectAll = document.getElementById('selectAllEmployees');
+        var rowChecks = document.querySelectorAll('.row-select-employee');
+        var btnBulk = document.getElementById('btnBulkMove');
+        function updateBulkButton() {
+            var any = Array.prototype.some.call(rowChecks, function(c) { return c.checked; });
+            if (btnBulk) btnBulk.disabled = !any;
+        }
+        if (selectAll) {
+            selectAll.addEventListener('change', function() {
+                rowChecks.forEach(function(c) { c.checked = selectAll.checked; });
+                updateBulkButton();
+            });
+        }
+        rowChecks.forEach(function(c) {
+            c.addEventListener('change', updateBulkButton);
+        });
+    });
+    </script>
 @endsection
 
 @push('styles')
@@ -214,6 +340,11 @@
     border: 1px solid #2d8659;
     color: #2d8659;
 }
+.alert-error {
+    background-color: #ffe5e5;
+    border: 1px solid #c44d4d;
+    color: #c44d4d;
+}
 
 @keyframes slideDown {
     from {
@@ -225,6 +356,175 @@
         transform: translateY(0);
     }
 }
+
+/* فلترة حسب الشهر - كروت */
+.month-filters-section {
+    margin-bottom: 28px;
+}
+.filters-title {
+    font-size: 16px;
+    color: #2c3e50;
+    margin: 0 0 14px 0;
+    font-weight: 600;
+}
+.month-filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+}
+.month-filter-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 12px;
+    background: white;
+    border: 2px solid #e8f4f8;
+    border-radius: 12px;
+    text-decoration: none;
+    color: #2c3e50;
+    transition: all 0.25s ease;
+    min-height: 70px;
+}
+.month-filter-card:hover {
+    border-color: #4a90e2;
+    background: #f8fcff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.15);
+}
+.month-filter-card.active {
+    background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+    border-color: #357abd;
+    color: white;
+    box-shadow: 0 4px 14px rgba(74, 144, 226, 0.35);
+}
+.month-filter-name {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+.month-filter-count {
+    font-size: 18px;
+    font-weight: 700;
+    opacity: 0.9;
+}
+.month-filter-card.active .month-filter-count {
+    opacity: 1;
+}
+
+/* Bulk move bar */
+.bulk-move-form {
+    margin-bottom: 20px;
+}
+.bulk-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 14px 18px;
+    background: #f0f7fa;
+    border-radius: 12px;
+    border: 1px solid rgba(74, 144, 226, 0.2);
+}
+.bulk-select-all {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    color: #2c3e50;
+}
+.bulk-select-all input { width: 18px; height: 18px; cursor: pointer; }
+.bulk-month-select {
+    padding: 8px 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 15px;
+    min-width: 160px;
+}
+.btn-bulk-move {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #5ba3d4 0%, #4a90e2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+}
+.btn-bulk-move:hover:not(:disabled) {
+    background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+}
+.btn-bulk-move:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.employee-card-select {
+    flex-shrink: 0;
+    margin: 0;
+    cursor: pointer;
+}
+.employee-card-select input { width: 18px; height: 18px; cursor: pointer; }
+
+/* Employees Table (عند الفلترة بالشهر) */
+.employees-table-wrap {
+    margin-top: 0;
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid rgba(74, 144, 226, 0.15);
+}
+.employees-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    font-size: 15px;
+}
+.employees-table thead {
+    background: linear-gradient(135deg, #e8f4f8 0%, #d0e8f2 100%);
+    color: #2c3e50;
+}
+.employees-table th {
+    padding: 14px 16px;
+    text-align: right;
+    font-weight: 600;
+    border-bottom: 2px solid rgba(74, 144, 226, 0.2);
+}
+.employees-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #e8f4f8;
+    vertical-align: middle;
+}
+.employees-table tbody tr:hover { background: #f8fbfd; }
+.employees-table .col-check { width: 50px; text-align: center; }
+.employees-table .col-check input { width: 18px; height: 18px; cursor: pointer; }
+.employees-table .text-muted { color: #94a3b8; font-size: 14px; }
+.table-project-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    background: #e8f4f8;
+    color: #4a90e2;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-left: 6px;
+    margin-bottom: 4px;
+}
+.employees-table .actions-cell { white-space: nowrap; }
+.employees-table .actions-cell .action-btn {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 6px;
+}
+.employees-table .actions-cell .edit-btn { background: #e8f4f8; color: #4a90e2; }
+.employees-table .actions-cell .edit-btn:hover { background: #d0e8f2; }
+.employees-table .actions-cell .delete-btn { background: #ffe5e5; color: #c44d4d; }
+.employees-table .actions-cell .delete-btn:hover { background: #ffd0d0; }
+.employees-table .delete-form-inline { display: inline; margin: 0; }
 
 /* Statistics Cards */
 .stats-cards {
@@ -341,7 +641,7 @@
 .employee-header {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     margin-bottom: 20px;
     padding-bottom: 20px;
     border-bottom: 1px solid #e8f4f8;
@@ -595,6 +895,12 @@
         grid-template-columns: 1fr;
         gap: 15px;
     }
+
+    .bulk-bar { flex-direction: column; align-items: stretch; }
+    .employees-table { font-size: 14px; }
+    .employees-table th, .employees-table td { padding: 10px 12px; }
+    .employees-table .actions-cell { white-space: normal; }
+    .employees-table .actions-cell .action-btn { margin-bottom: 4px; }
 
     .employee-actions {
         flex-direction: column;

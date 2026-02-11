@@ -9,21 +9,57 @@ use Illuminate\Http\Request;
 class EmployeeController extends Controller
 {
     /**
-     * عرض جميع الموظفين
+     * عرض جميع الموظفين (مع فلتر اختياري حسب شهر المشاريع)
      */
-    public function index()
+    public function index(Request $request)
     {
-        $employees = Employee::with(['projects' => function($query) {
+        $selectedMonth = $request->get('month'); // null = الكل
+
+        $employeeIdsQuery = \DB::table('employee_project')
+            ->join('projects', 'projects.id', '=', 'employee_project.project_id')
+            ->select('employee_project.employee_id');
+
+        if ($selectedMonth && preg_match('/^\d{4}-\d{2}$/', $selectedMonth)) {
+            $employeeIdsQuery->where('projects.month', $selectedMonth);
+        }
+
+        $employeeIds = $employeeIdsQuery->distinct()->pluck('employee_id')->toArray();
+
+        $employeesQuery = Employee::with(['projects' => function ($query) use ($selectedMonth) {
             $query->withPivot('service_types');
-        }])->orderBy('created_at', 'desc')->get();
-        $totalEmployees = Employee::count();
-        $activeEmployees = Employee::where('status', 'active')->count();
-        $inactiveEmployees = Employee::where('status', 'inactive')->count();
-        
-        // حساب إجمالي المرتبات
-        $totalSalaries = Employee::whereNotNull('monthly_salary')->sum('monthly_salary');
-        
-        return view('employees.index', compact('employees', 'totalEmployees', 'activeEmployees', 'inactiveEmployees', 'totalSalaries'));
+            if ($selectedMonth) {
+                $query->where('month', $selectedMonth);
+            }
+        }])->orderBy('created_at', 'desc');
+
+        if ($selectedMonth) {
+            $employeesQuery->whereIn('id', $employeeIds ?: [0]);
+        }
+
+        $employees = $employeesQuery->get();
+
+        $totalEmployees = $employees->count();
+        $activeEmployees = $employees->where('status', 'active')->count();
+        $inactiveEmployees = $employees->where('status', 'inactive')->count();
+        $totalSalaries = $employees->sum('monthly_salary');
+
+        // الأشهر التي فيها موظفون (مشاريع مرتبطة بموظفين) فقط
+        $monthCounts = \DB::table('projects')
+            ->join('employee_project', 'employee_project.project_id', '=', 'projects.id')
+            ->whereNotNull('projects.month')
+            ->where('projects.month', '!=', '')
+            ->selectRaw('projects.month as month, COUNT(DISTINCT employee_project.employee_id) as cnt')
+            ->groupBy('projects.month')
+            ->orderBy('projects.month', 'desc')
+            ->pluck('cnt', 'month')
+            ->toArray();
+
+        $allCount = Employee::count();
+
+        return view('employees.index', compact(
+            'employees', 'totalEmployees', 'activeEmployees', 'inactiveEmployees', 'totalSalaries',
+            'selectedMonth', 'monthCounts', 'allCount'
+        ));
     }
 
     /**
@@ -128,6 +164,63 @@ class EmployeeController extends Controller
 
         return redirect()->route('employees.index')
             ->with('success', 'تم حذف الموظف بنجاح');
+    }
+
+    /**
+     * نسخ الموظفين المحددين إلى شهر آخر (نسخ مشاريعهم إلى الشهر وربطهم بها)
+     */
+    public function moveToMonth(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'exists:employees,id',
+            'month' => 'required|string|size:7|regex:/^\d{4}-\d{2}$/',
+        ]);
+
+        $employeeIds = array_filter($validated['ids']);
+        if (empty($employeeIds)) {
+            return redirect()->route('employees.index')
+                ->with('error', 'يرجى اختيار موظف واحد على الأقل.');
+        }
+
+        $targetMonth = $validated['month'];
+        $employees = Employee::with(['projects' => fn ($q) => $q->withPivot('service_types')])
+            ->whereIn('id', $employeeIds)
+            ->get();
+
+        $projectIds = $employees->pluck('projects')->flatten()->pluck('id')->unique()->values()->all();
+        if (empty($projectIds)) {
+            return redirect()->route('employees.index')
+                ->with('error', 'الموظفون المحددون لا يملكون مشاريع لنسخها.');
+        }
+
+        $projectMap = [];
+        foreach (Project::with('employees')->whereIn('id', $projectIds)->get() as $project) {
+            $newProject = $project->replicate();
+            $newProject->month = $targetMonth;
+            $newProject->save();
+            $projectMap[$project->id] = $newProject;
+        }
+
+        foreach ($employees as $employee) {
+            foreach ($employee->projects as $project) {
+                $newProject = $projectMap[$project->id] ?? null;
+                if (!$newProject) {
+                    continue;
+                }
+                $serviceTypes = $project->pivot->service_types;
+                if (is_string($serviceTypes)) {
+                    $serviceTypes = json_decode($serviceTypes, true) ?: [];
+                }
+                $newProject->employees()->syncWithoutDetaching([
+                    $employee->id => ['service_types' => json_encode($serviceTypes)],
+                ]);
+            }
+        }
+
+        $countProjects = count($projectMap);
+        return redirect()->route('employees.index')
+            ->with('success', "تم نسخ الموظفين المحددين إلى الشهر: تم إنشاء {$countProjects} مشروع جديد وربطهم بها.");
     }
 
     /**

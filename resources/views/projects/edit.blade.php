@@ -50,6 +50,22 @@
             </div>
 
             <div class="form-group">
+                <label for="month">الشهر</label>
+                <select id="month" name="month" class="form-input">
+                    @php
+                        $monthsEdit = ['01'=>'يناير','02'=>'فبراير','03'=>'مارس','04'=>'أبريل','05'=>'مايو','06'=>'يونيو','07'=>'يوليو','08'=>'أغسطس','09'=>'سبتمبر','10'=>'أكتوبر','11'=>'نوفمبر','12'=>'ديسمبر'];
+                        $currentY = (int) date('Y');
+                        $projectMonth = old('month', $project->month ?? $project->created_at?->format('Y-m') ?? date('Y-m'));
+                    @endphp
+                    @for($y = $currentY - 1; $y <= $currentY + 1; $y++)
+                        @foreach($monthsEdit as $m => $name)
+                            <option value="{{ $y }}-{{ $m }}" {{ ($projectMonth === $y . '-' . $m) ? 'selected' : '' }}>{{ $name }} {{ $y }}</option>
+                        @endforeach
+                    @endfor
+                </select>
+            </div>
+
+            <div class="form-group">
                 <label>نوع الخدمة <span class="required">*</span></label>
                 <div class="service-type-cards" id="serviceTypeCards">
                     @php

@@ -5,7 +5,7 @@
 
 @section('content')
             <div class="welcome-section">
-                <h2>مرحباً بك في MarketLink</h2>
+                <h2>مرحباً بك في ماركت لينك</h2>
                 <p>نظام إدارة بيانات العملاء</p>
             </div>
 

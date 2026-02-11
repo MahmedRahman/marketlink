@@ -6,6 +6,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\ImportantAccountController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\FinancialRecordController;
 use App\Http\Controllers\TaskController;
@@ -30,13 +31,19 @@ Route::middleware('auth')->group(function () {
     
     // المشاريع - CRUD
     Route::resource('projects', ProjectController::class);
+    Route::post('/projects/move-to-month', [ProjectController::class, 'moveToMonth'])->name('projects.move-to-month');
     
     // الموظفين - CRUD
     Route::resource('employees', EmployeeController::class);
+    Route::post('/employees/move-to-month', [EmployeeController::class, 'moveToMonth'])->name('employees.move-to-month');
     Route::post('/employees/update-order', [EmployeeController::class, 'updateOrder'])->name('employees.update-order');
     
     // الاشتراكات - CRUD
     Route::resource('subscriptions', SubscriptionController::class);
+
+    // حسابات الاشتراكات (مواقع + يوزر + باسورد)
+    Route::resource('important-accounts', ImportantAccountController::class);
+    Route::post('/important-accounts/move-to-month', [ImportantAccountController::class, 'moveToMonth'])->name('important-accounts.move-to-month');
     
     // تقرير الحسابات
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');

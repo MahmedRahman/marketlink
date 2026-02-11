@@ -1324,31 +1324,44 @@ if (createRecordsBtn) {
             const formData = new FormData();
             formData.append('month', month);
             formData.append('_token', '{{ csrf_token() }}');
-            
+
             fetch('{{ route("reports.create-records") }}', {
                 method: 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
                 body: formData
             })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(data => {
-                        throw new Error(data.message || 'حدث خطأ');
-                    });
-                }
-                return response.json();
+            .then(function(response) {
+                return response.text().then(function(text) {
+                    try {
+                        var data = JSON.parse(text);
+                        if (!response.ok) {
+                            throw new Error(data.message || 'حدث خطأ');
+                        }
+                        return data;
+                    } catch (e) {
+                        if (!response.ok) {
+                            if (response.status === 419) {
+                                throw new Error('انتهت الجلسة. يرجى تحديث الصفحة والمحاولة مرة أخرى.');
+                            }
+                            throw new Error('حدث خطأ من الخادم. يرجى تحديث الصفحة والمحاولة مرة أخرى.');
+                        }
+                        throw e;
+                    }
+                });
             })
-            .then(data => {
+            .then(function(data) {
                 if (data.success) {
-                    alert('تم إنشاء السجلات بنجاح');
+                    alert(data.message || 'تم إنشاء السجلات بنجاح');
                     location.reload();
                 } else {
                     alert(data.message || 'حدث خطأ أثناء إنشاء السجلات');
                 }
             })
-            .catch(error => {
+            .catch(function(error) {
                 console.error('Error:', error);
                 alert(error.message || 'حدث خطأ أثناء إنشاء السجلات');
             });

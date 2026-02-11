@@ -15,10 +15,7 @@ class ReportController extends Controller
      */
     public function index(Request $request)
     {
-        // إذا لم يُحدد شهر، التوجيه لصفحة حالة الدفع — يناير 2026
-        if (!$request->has('month')) {
-            return redirect()->route('reports.payment-status', ['month' => '2026-01']);
-        }
+        // إذا لم يُحدد شهر، عرض التقرير لشهر الحالي (أو يناير 2026)
         $selectedMonth = $request->get('month', date('Y-m'));
         $year = date('Y', strtotime($selectedMonth . '-01'));
         $month = date('m', strtotime($selectedMonth . '-01'));
@@ -236,111 +233,123 @@ class ReportController extends Controller
      */
     public function createRecords(Request $request)
     {
-        $selectedMonth = $request->input('month', date('Y-m'));
-        
-        // التحقق من صحة الشهر
-        if (!preg_match('/^\d{4}-\d{2}$/', $selectedMonth)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'صيغة الشهر غير صحيحة'
-            ], 400);
-        }
-        
-        $year = date('Y', strtotime($selectedMonth . '-01'));
-        $month = date('m', strtotime($selectedMonth . '-01'));
+        try {
+            $selectedMonth = $request->input('month', date('Y-m'));
 
-        // التحقق من وجود سجلات للشهر
-        $existingRecords = FinancialRecord::where('month', $selectedMonth)->count();
-        if ($existingRecords > 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'يوجد بالفعل سجلات لهذا الشهر. يرجى حذفها أولاً أو تعديلها.'
-            ], 400);
-        }
+            // التحقق من صحة الشهر
+            if (!preg_match('/^\d{4}-\d{2}$/', $selectedMonth)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'صيغة الشهر غير صحيحة'
+                ], 400);
+            }
 
-        // إنشاء سجلات الإيرادات من المشاريع
-        $projects = Project::whereYear('created_at', $year)
-            ->whereMonth('created_at', $month)
-            ->get();
-        
-        foreach ($projects as $project) {
-            if ($project->service_revenue && is_array($project->service_revenue)) {
-                $totalRevenue = 0;
-                foreach ($project->service_revenue as $revenue) {
-                    if ($revenue !== null && is_numeric($revenue)) {
-                        $totalRevenue += $revenue;
+            $year = date('Y', strtotime($selectedMonth . '-01'));
+            $month = date('m', strtotime($selectedMonth . '-01'));
+
+            // التحقق من وجود سجلات للشهر
+            $existingRecords = FinancialRecord::where('month', $selectedMonth)->count();
+            if ($existingRecords > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'يوجد بالفعل سجلات لهذا الشهر. يرجى حذفها أولاً أو تعديلها.'
+                ], 400);
+            }
+
+            // إنشاء سجلات الإيرادات من المشاريع
+            $projects = Project::whereYear('created_at', $year)
+                ->whereMonth('created_at', $month)
+                ->get();
+
+            foreach ($projects as $project) {
+                if ($project->service_revenue && is_array($project->service_revenue)) {
+                    $totalRevenue = 0;
+                    foreach ($project->service_revenue as $revenue) {
+                        if ($revenue !== null && is_numeric($revenue)) {
+                            $totalRevenue += $revenue;
+                        }
+                    }
+                    if ($totalRevenue > 0) {
+                        FinancialRecord::create([
+                            'type' => 'revenue',
+                            'description' => 'مشروع: ' . $project->name,
+                            'amount' => $totalRevenue,
+                            'currency' => 'egp',
+                            'payment_status' => 'pending',
+                            'record_date' => $project->created_at->format('Y-m-d'),
+                            'month' => $selectedMonth,
+                        ]);
                     }
                 }
-                if ($totalRevenue > 0) {
-                    FinancialRecord::create([
-                        'type' => 'revenue',
-                        'description' => 'مشروع: ' . $project->name,
-                        'amount' => $totalRevenue,
-                        'currency' => 'egp',
-                        'payment_status' => 'pending', // حالة افتراضية
-                        'record_date' => $project->created_at->format('Y-m-d'),
-                        'month' => $selectedMonth,
-                    ]);
-                }
             }
-        }
 
-        // إنشاء سجلات المرتبات
-        $employees = Employee::whereYear('created_at', $year)
-            ->whereMonth('created_at', $month)
-            ->whereNotNull('monthly_salary')
-            ->get();
-        
-        foreach ($employees as $employee) {
-            FinancialRecord::create([
-                'type' => 'expense',
-                'description' => 'مرتب: ' . $employee->name,
-                'amount' => $employee->monthly_salary,
-                'currency' => 'egp',
-                'status' => 'pending', // حالة افتراضية
-                'record_date' => $employee->created_at->format('Y-m-d'),
-                'month' => $selectedMonth,
-            ]);
-        }
+            // إنشاء سجلات المرتبات
+            $employees = Employee::whereYear('created_at', $year)
+                ->whereMonth('created_at', $month)
+                ->whereNotNull('monthly_salary')
+                ->get();
 
-        // إنشاء سجلات الاشتراكات
-        $subscriptions = Subscription::whereYear('created_at', $year)
-            ->whereMonth('created_at', $month)
-            ->whereNotNull('amount')
-            ->get();
-        
-        foreach ($subscriptions as $subscription) {
-            FinancialRecord::create([
-                'type' => 'expense',
-                'description' => 'اشتراك: ' . $subscription->site_name,
-                'amount' => $subscription->amount,
-                'currency' => $subscription->currency,
-                'status' => 'pending', // حالة افتراضية
-                'record_date' => $subscription->created_at->format('Y-m-d'),
-                'month' => $selectedMonth,
-            ]);
-        }
+            foreach ($employees as $employee) {
+                FinancialRecord::create([
+                    'type' => 'expense',
+                    'description' => 'مرتب: ' . $employee->name,
+                    'amount' => $employee->monthly_salary,
+                    'currency' => 'egp',
+                    'status' => 'pending',
+                    'record_date' => $employee->created_at->format('Y-m-d'),
+                    'month' => $selectedMonth,
+                ]);
+            }
 
-        $revenueCount = 0;
-        foreach ($projects as $project) {
-            if ($project->service_revenue && is_array($project->service_revenue)) {
-                $totalRevenue = 0;
-                foreach ($project->service_revenue as $revenue) {
-                    if ($revenue !== null && is_numeric($revenue)) {
-                        $totalRevenue += $revenue;
+            // إنشاء سجلات الاشتراكات
+            $subscriptions = Subscription::whereYear('created_at', $year)
+                ->whereMonth('created_at', $month)
+                ->whereNotNull('amount')
+                ->get();
+
+            foreach ($subscriptions as $subscription) {
+                FinancialRecord::create([
+                    'type' => 'expense',
+                    'description' => 'اشتراك: ' . $subscription->site_name,
+                    'amount' => $subscription->amount,
+                    'currency' => in_array($subscription->currency ?? '', ['usd', 'egp']) ? $subscription->currency : 'egp',
+                    'status' => 'pending',
+                    'record_date' => $subscription->created_at->format('Y-m-d'),
+                    'month' => $selectedMonth,
+                ]);
+            }
+
+            $revenueCount = 0;
+            foreach ($projects as $project) {
+                if ($project->service_revenue && is_array($project->service_revenue)) {
+                    $totalRevenue = 0;
+                    foreach ($project->service_revenue as $revenue) {
+                        if ($revenue !== null && is_numeric($revenue)) {
+                            $totalRevenue += $revenue;
+                        }
+                    }
+                    if ($totalRevenue > 0) {
+                        $revenueCount++;
                     }
                 }
-                if ($totalRevenue > 0) {
-                    $revenueCount++;
-                }
             }
+
+            $totalCount = $revenueCount + $employees->count() + $subscriptions->count();
+
+            $message = $totalCount > 0
+                ? "تم إنشاء {$totalCount} سجل بنجاح"
+                : 'لم يتم إنشاء أي سجل. لا توجد مشاريع أو موظفين أو اشتراكات منشأة في هذا الشهر.';
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'count' => $totalCount,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'حدث خطأ: ' . $e->getMessage()
+            ], 500);
         }
-
-        $totalCount = $revenueCount + $employees->count() + $subscriptions->count();
-
-        return response()->json([
-            'success' => true,
-            'message' => "تم إنشاء {$totalCount} سجل بنجاح"
-        ]);
     }
 }

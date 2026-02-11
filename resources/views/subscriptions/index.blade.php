@@ -76,73 +76,75 @@
             </div>
         </div>
 
-        <!-- Subscriptions Cards -->
-        <div class="subscriptions-cards-container">
+        <!-- Subscriptions Table -->
+        <div class="subscriptions-table-wrap">
             @if($subscriptions->count() > 0)
-                <div class="subscriptions-grid">
-                    @foreach($subscriptions as $subscription)
-                        <div class="subscription-card">
-                            <div class="subscription-header">
-                                <div class="subscription-icon">🔔</div>
-                                <div class="subscription-info">
-                                    <h3 class="subscription-name">{{ $subscription->site_name }}</h3>
-                                    <div class="badges-row">
-                                        <span class="type-badge type-{{ $subscription->subscription_type }}">
-                                            {{ $subscription->subscription_type === 'monthly' ? 'شهري' : 'سنوي' }}
-                                        </span>
-                                        <span class="status-badge status-{{ $subscription->status ?? 'active' }}">
-                                            {{ ($subscription->status ?? 'active') === 'active' ? 'نشط' : 'غير نشط' }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="subscription-details">
-                                <div class="detail-item">
-                                    <span class="detail-icon">👤</span>
-                                    <span class="detail-text">{{ $subscription->username }}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-icon">🔒</span>
-                                    <span class="detail-text password-field" data-password="{{ $subscription->password }}">
+                <table class="subscriptions-table">
+                    <thead>
+                        <tr>
+                            <th>الموقع</th>
+                            <th>اسم المستخدم</th>
+                            <th>كلمة المرور</th>
+                            <th>النوع</th>
+                            <th>الحالة</th>
+                            <th>يوم التجديد</th>
+                            <th>المبلغ</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($subscriptions as $subscription)
+                            <tr>
+                                <td>
+                                    <strong>{{ $subscription->site_name }}</strong>
+                                    @if($subscription->site_url)
+                                        <br><a href="{{ $subscription->site_url }}" target="_blank" rel="noopener" class="table-link">{{ Str::limit($subscription->site_url, 35) }}</a>
+                                    @endif
+                                </td>
+                                <td>{{ $subscription->username }}</td>
+                                <td>
+                                    <span class="password-field" data-password="{{ $subscription->password }}">
                                         <span class="password-mask">••••••••</span>
-                                        <button type="button" class="toggle-password" onclick="togglePassword(this)">
-                                            👁️
-                                        </button>
+                                        <button type="button" class="toggle-password" onclick="togglePassword(this)" title="إظهار/إخفاء">👁️</button>
                                     </span>
-                                </div>
-                                @if($subscription->subscription_type === 'monthly' && $subscription->renewal_day)
-                                    <div class="detail-item">
-                                        <span class="detail-icon">📅</span>
-                                        <span class="detail-text">يوم التجديد: {{ $subscription->renewal_day }}</span>
-                                    </div>
-                                @endif
-                                @if($subscription->amount)
-                                    <div class="detail-item">
-                                        <span class="detail-icon">💰</span>
-                                        <span class="detail-text">
-                                            {{ number_format($subscription->amount, 2) }} 
-                                            {{ $subscription->currency === 'usd' ? '$' : 'ج.م' }}
-                                        </span>
-                                    </div>
-                                @endif
-                            </div>
-                            <div class="subscription-actions">
-                                <a href="{{ route('subscriptions.edit', $subscription->id) }}" class="action-btn edit-btn" title="تعديل">
-                                    <span>✏️</span>
-                                    تعديل
-                                </a>
-                                <form action="{{ route('subscriptions.destroy', $subscription->id) }}" method="POST" class="delete-form" onsubmit="return confirm('هل أنت متأكد من حذف هذا الاشتراك؟');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="action-btn delete-btn" title="حذف">
-                                        <span>🗑️</span>
-                                        حذف
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
+                                </td>
+                                <td>
+                                    <span class="type-badge type-{{ $subscription->subscription_type }}">
+                                        {{ $subscription->subscription_type === 'monthly' ? 'شهري' : 'سنوي' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-{{ $subscription->status ?? 'active' }}">
+                                        {{ ($subscription->status ?? 'active') === 'active' ? 'نشط' : 'غير نشط' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    @if($subscription->subscription_type === 'monthly' && $subscription->renewal_day)
+                                        {{ $subscription->renewal_day }}
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($subscription->amount)
+                                        {{ number_format($subscription->amount, 2) }}
+                                        {{ $subscription->currency === 'usd' ? '$' : 'ج.م' }}
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
+                                <td class="actions-cell">
+                                    <a href="{{ route('subscriptions.edit', $subscription->id) }}" class="action-btn edit-btn" title="تعديل">✏️ تعديل</a>
+                                    <form action="{{ route('subscriptions.destroy', $subscription->id) }}" method="POST" class="delete-form-inline" onsubmit="return confirm('هل أنت متأكد من حذف هذا الاشتراك؟');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="action-btn delete-btn" title="حذف">🗑️ حذف</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             @else
                 <div class="empty-state">
                     <div class="empty-icon">🔔</div>
@@ -341,83 +343,65 @@
     color: #c44d4d;
 }
 
-/* Subscriptions Cards Grid */
-.subscriptions-cards-container {
+/* Subscriptions Table */
+.subscriptions-table-wrap {
     margin-top: 20px;
-}
-
-.subscriptions-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 20px;
-}
-
-.subscription-card {
-    background: white;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 4px 15px rgba(74, 144, 226, 0.08);
-    border: 1px solid rgba(74, 144, 226, 0.1);
-    transition: all 0.3s ease;
-}
-
-.subscription-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(74, 144, 226, 0.15);
-    border-color: rgba(74, 144, 226, 0.2);
-}
-
-.subscription-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 20px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #e8f4f8;
-}
-
-.subscription-icon {
-    font-size: 40px;
-    width: 60px;
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    overflow-x: auto;
     border-radius: 12px;
-    background: linear-gradient(135deg, #e8f4f8 0%, #f0f7fa 100%);
-    flex-shrink: 0;
+    border: 1px solid rgba(74, 144, 226, 0.15);
 }
 
-.subscription-info {
-    flex: 1;
-    min-width: 0;
+.subscriptions-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    font-size: 15px;
 }
 
-.subscription-name {
-    font-size: 20px;
-    font-weight: 600;
+.subscriptions-table thead {
+    background: linear-gradient(135deg, #e8f4f8 0%, #d0e8f2 100%);
     color: #2c3e50;
-    margin: 0 0 8px 0;
-    word-break: break-word;
 }
 
-.badges-row {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
+.subscriptions-table th {
+    padding: 14px 16px;
+    text-align: right;
+    font-weight: 600;
+    border-bottom: 2px solid rgba(74, 144, 226, 0.2);
 }
 
-.type-badge {
-    display: inline-block;
-    padding: 6px 16px;
-    border-radius: 20px;
+.subscriptions-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #e8f4f8;
+    vertical-align: middle;
+}
+
+.subscriptions-table tbody tr:hover {
+    background: #f8fbfd;
+}
+
+.subscriptions-table .table-link {
     font-size: 13px;
-    font-weight: 500;
+    color: #4a90e2;
+    text-decoration: none;
+    margin-top: 4px;
+    display: inline-block;
+    word-break: break-all;
 }
 
+.subscriptions-table .table-link:hover {
+    text-decoration: underline;
+}
+
+.subscriptions-table .text-muted {
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+.type-badge,
 .status-badge {
     display: inline-block;
-    padding: 6px 16px;
+    padding: 5px 12px;
     border-radius: 20px;
     font-size: 13px;
     font-weight: 500;
@@ -443,41 +427,14 @@
     color: #c44d4d;
 }
 
-.subscription-details {
-    margin-bottom: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.detail-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px;
-    background: #f8f9fa;
-    border-radius: 10px;
-}
-
-.detail-icon {
-    font-size: 18px;
-}
-
-.detail-text {
-    font-size: 15px;
-    color: #5a6c7d;
-    font-weight: 500;
-    flex: 1;
-}
-
 .password-field {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 8px;
 }
 
 .password-mask {
-    flex: 1;
+    min-width: 4em;
 }
 
 .toggle-password {
@@ -486,58 +443,50 @@
     cursor: pointer;
     font-size: 16px;
     padding: 4px;
-    transition: transform 0.2s;
 }
 
 .toggle-password:hover {
-    transform: scale(1.2);
+    transform: scale(1.1);
 }
 
-.subscription-actions {
-    display: flex;
-    gap: 10px;
-    padding-top: 20px;
-    border-top: 1px solid #e8f4f8;
+.subscriptions-table .actions-cell {
+    white-space: nowrap;
 }
 
-.action-btn {
-    flex: 1;
-    padding: 10px 16px;
+.subscriptions-table .actions-cell .action-btn {
+    padding: 8px 14px;
     border: none;
-    border-radius: 10px;
-    font-size: 14px;
+    border-radius: 8px;
+    font-size: 13px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
     text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 6px;
 }
 
-.edit-btn {
-    background: linear-gradient(135deg, #e8f4f8 0%, #d0e8f2 100%);
+.subscriptions-table .actions-cell .edit-btn {
+    background: #e8f4f8;
     color: #4a90e2;
 }
 
-.edit-btn:hover {
-    background: linear-gradient(135deg, #d0e8f2 0%, #b8d9e8 100%);
-    transform: translateY(-2px);
+.subscriptions-table .actions-cell .edit-btn:hover {
+    background: #d0e8f2;
 }
 
-.delete-btn {
-    background: linear-gradient(135deg, #ffe5e5 0%, #ffd0d0 100%);
+.subscriptions-table .actions-cell .delete-btn {
+    background: #ffe5e5;
     color: #c44d4d;
 }
 
-.delete-btn:hover {
-    background: linear-gradient(135deg, #ffd0d0 0%, #ffb8b8 100%);
-    transform: translateY(-2px);
+.subscriptions-table .actions-cell .delete-btn:hover {
+    background: #ffd0d0;
 }
 
-.delete-form {
-    flex: 1;
+.delete-form-inline {
+    display: inline;
     margin: 0;
 }
 
@@ -584,17 +533,21 @@
         gap: 15px;
     }
 
-    .subscriptions-grid {
-        grid-template-columns: 1fr;
-        gap: 15px;
+    .subscriptions-table {
+        font-size: 14px;
     }
 
-    .subscription-actions {
-        flex-direction: column;
+    .subscriptions-table th,
+    .subscriptions-table td {
+        padding: 10px 12px;
     }
 
-    .action-btn {
-        width: 100%;
+    .subscriptions-table .actions-cell {
+        white-space: normal;
+    }
+
+    .subscriptions-table .actions-cell .action-btn {
+        margin-bottom: 4px;
     }
 }
 </style>

@@ -33,4 +33,13 @@ class Employee extends Model
             ->withPivot('service_types')
             ->withTimestamps();
     }
+
+    /**
+     * حسابات الاشتراكات التي يكون الموظف مسؤولاً عنها
+     */
+    public function importantAccounts()
+    {
+        return $this->belongsToMany(ImportantAccount::class, 'important_account_employee')
+            ->withTimestamps();
+    }
 }
