@@ -17,10 +17,10 @@
     </style>
     @stack('styles')
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
-    <header class="border-b-2 border-indigo-100 bg-white/95 backdrop-blur sticky top-0 z-50 shadow-sm">
+<body class="min-h-screen bg-teal-50 text-slate-900 antialiased">
+    <header class="border-b-2 border-teal-100 bg-white/95 backdrop-blur sticky top-0 z-50 shadow-sm">
         <div class="container mx-auto px-4 py-5 flex items-center justify-between max-w-6xl">
-            <a href="{{ route('home') }}" class="text-xl font-bold text-slate-800 hover:text-indigo-600 transition-colors">ماركت لينك</a>
+            <a href="{{ route('home') }}" class="text-xl font-bold text-slate-800 hover:text-teal-700 transition-colors">ماركت لينك</a>
         </div>
     </header>
 
@@ -28,11 +28,11 @@
         @yield('content')
     </main>
 
-    <footer class="border-t-2 border-indigo-900/30 bg-slate-800 text-slate-300 mt-20">
+    <footer class="border-t-2 border-teal-900/30 bg-slate-800 text-slate-300 mt-20">
         <div class="container mx-auto px-4 py-16 max-w-6xl">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-8">
                 <div>
-                    <a href="{{ route('home') }}" class="text-xl font-bold text-white hover:text-indigo-300 transition-colors">ماركت لينك</a>
+                    <a href="{{ route('home') }}" class="text-xl font-bold text-white hover:text-teal-300 transition-colors">ماركت لينك</a>
                     <p class="text-slate-400 text-sm mt-4 max-w-md leading-relaxed">التسويق الرقمي والتجارة الإلكترونية بالذكاء الاصطناعي — فيديوهات، تصميمات، حملات، ومواقع.</p>
                     <div class="flex gap-5 mt-6">
                         <a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:text-white transition-colors" aria-label="Facebook">
