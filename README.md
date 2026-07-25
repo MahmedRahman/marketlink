@@ -2,7 +2,7 @@
 
 نظام إدارة بيانات العملاء - Dashboard لتسجيل وإدارة بيانات العملاء
 
-> **الإنتاج:** الموقع الحي [marketlink.app](https://marketlink.app/) — تفاصيل السيرفر والنشر وروابط GitHub في [`PRODUCTION.md`](./PRODUCTION.md).
+> **الإنتاج:** الموقع الحي [marketlink.app](https://marketlink.app/) — تفاصيل السيرفر والنشر وروابط GitHub في [`PRODUCTION.md`](./docs/PRODUCTION.md).
 >
 > **GitHub:** https://github.com/MahmedRahman/marketlink
 

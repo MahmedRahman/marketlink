@@ -39,17 +39,20 @@ ssh test@192.168.68.223
 المستخدم
   → Cloudflare (DNS + Proxy على marketlink.app)
   → cloudflared tunnel (systemd: cloudflared.service)
-  → Docker container: marketlink_app  (host port 8006 → container 80)
+  → Docker container: marketlink_web_app  (host port 8006 → container 80)
   → داخل الحاوية: nginx + php-fpm (supervisor)
-  → Laravel من /home/test/marketlink
+  → Laravel من /home/test/marketlink-web
+
+> **ملاحظة 2026-07-25:** الموقع الحي بقى يشغّل **`marketlink-web`** (النظام الداخلي) على نفس منفذ الـ tunnel `8006`.
+> النسخة القديمة `marketlink` متاحة احتياطيًا على المنفذ `8008`.
 ```
 
 ### Docker Compose
 
-- ملف: [`docker-compose.yml`](./docker-compose.yml)
+- ملف: [`docker-compose.yml`](../docker-compose.yml)
 - Container: `marketlink_app`
 - Image: `Dockerfile` (`php:8.4-fpm-alpine` + nginx + supervisor)
-- المنفذ: `8006:80`
+- المنفذ: `8008:80` (احتياطي — الحي على `marketlink-web` منفذ `8006`)
 - البيئة: من `.env` على السيرفر (`env_file`) مع قيم افتراضية production في compose
 - DB: SQLite (لا تُمسَح عند النشر)
 
@@ -85,7 +88,7 @@ systemctl status cloudflared
 
 ## النشر
 
-السكربت المعتمد: [`deploy.sh`](./deploy.sh)
+السكربت المعتمد: [`deploy.sh`](../deploy.sh)
 
 على السيرفر:
 

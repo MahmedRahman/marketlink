@@ -18,4 +18,4 @@ services:
       - ./:/var/www/html
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
     ports:
-      - "8006:80"
+      - "8008:80"
