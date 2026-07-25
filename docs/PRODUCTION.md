@@ -72,7 +72,7 @@ DB_CONNECTION=sqlite
 cd /home/test/marketlink
 docker compose ps
 docker compose logs -f app
-curl -I http://127.0.0.1:8006/
+curl -I http://127.0.0.1:8008/
 curl -I https://marketlink.app/
 ```
 
@@ -82,7 +82,7 @@ curl -I https://marketlink.app/
 systemctl status cloudflared
 ```
 
-الـ tunnel يشير للمنفذ المحلي `8006`. لا توقفه مع إعادة نشر التطبيق.
+الـ tunnel يشير للمنفذ المحلي `8006` (حاوية `marketlink-web`). النسخة القديمة على `8008`.
 
 ---
 
@@ -103,7 +103,7 @@ cd /home/test/marketlink
 2. `docker compose build` عند تغيّر Dockerfile / compose / `docker/`
 3. `docker compose up -d`
 4. `artisan migrate --force` + `config/route/view:cache`
-5. health check على `http://127.0.0.1:8006/`
+5. health check على `http://127.0.0.1:8008/`
 
 إعادة بناء إجبارية:
 
@@ -148,5 +148,5 @@ docker compose stop
 - **الدومين:** https://marketlink.app/
 - **الكود:** https://github.com/MahmedRahman/marketlink
 - **السيرفر:** `test@192.168.68.223:/home/test/marketlink`
-- **التشغيل:** Docker Compose (`marketlink_app` على `8006`) خلف Cloudflare Tunnel
+- **التشغيل:** Docker Compose (`marketlink_app` على `8008` احتياطي؛ الحي `marketlink_web_app` على `8006`) خلف Cloudflare Tunnel
 - **النشر:** `./deploy.sh`
